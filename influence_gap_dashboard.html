@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Influence Gap — Data Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --bg-2: #161616;
+    --bg-3: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border-md: rgba(255,255,255,0.14);
+    --text-1: #f0f0f0;
+    --text-2: #999;
+    --text-3: #666;
+    --accent-red: #E24B4A;
+    --accent-blue: #378ADD;
+    --accent-green: #1D9E75;
+    --accent-amber: #EF9F27;
+    --accent-gray: #888780;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  header { margin-bottom: 40px; }
+
+  .header-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--text-1);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+
+  .header-thesis {
+    font-size: 15px;
+    color: var(--text-2);
+    max-width: 640px;
+    line-height: 1.6;
+  }
+
+  .header-thesis em {
+    color: var(--text-1);
+    font-style: normal;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .meta-item { font-size: 12px; color: var(--text-3); }
+  .meta-item strong { color: var(--text-2); font-weight: 500; }
+
+  nav {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+    border-bottom: 0.5px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  nav button {
+    font-size: 13px;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: var(--text-3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    transition: color 0.15s, border-color 0.15s;
+    font-family: inherit;
+  }
+
+  nav button:hover { color: var(--text-2); }
+  nav button.active { color: var(--text-1); border-bottom-color: var(--text-1); }
+
+  .tab { display: none; }
+  .tab.show { display: block; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .kpi {
+    background: var(--bg-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+
+  .kpi-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 500; color: var(--text-1); letter-spacing: -0.02em; line-height: 1; margin-bottom: 4px; }
+  .kpi-sub { font-size: 11px; color: var(--text-3); }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 6px;
+  }
+
+  .section-note {
+    font-size: 13px;
+    color: var(--text-3);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .chart-card {
+    background: var(--bg-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .chart-title { font-size: 14px; font-weight: 500; color: var(--text-1); }
+  .chart-subtitle { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 680px) {
+    .two-col { grid-template-columns: 1fr; }
+    h1 { font-size: 24px; }
+    .page { padding: 32px 20px 60px; }
+  }
+
+  .chart-wrap { position: relative; width: 100%; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .arch-list { display: flex; flex-direction: column; gap: 0; }
+
+  .arch-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 70px 70px 50px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .arch-row:last-child { border-bottom: none; }
+
+  .arch-name { font-size: 13px; font-weight: 500; color: var(--text-1); }
+
+  .arch-bar-track {
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .arch-bar { height: 100%; border-radius: 3px; }
+
+  .arch-stat {
+    font-size: 12px;
+    color: var(--text-2);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .arch-pct { font-size: 11px; color: var(--text-3); text-align: right; }
+
+  .r-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  @media (max-width: 600px) { .r-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .r-card {
+    background: var(--bg-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+
+  .r-card-platform { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .r-card-value { font-size: 24px; font-weight: 500; color: var(--text-1); margin-bottom: 4px; letter-spacing: -0.02em; }
+  .r-card-note { font-size: 11px; color: var(--text-3); }
+
+  .money-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
+    align-items: center;
+    margin: 24px 0;
+  }
+
+  @media (max-width: 580px) {
+    .money-grid { grid-template-columns: 1fr; }
+    .money-vs { text-align: center; }
+  }
+
+  .money-box {
+    background: var(--bg-2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+  }
+
+  .money-box.highlight { border-color: var(--accent-green); }
+
+  .money-box-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 18px;
+  }
+
+  .money-box.highlight .money-box-label { color: var(--accent-green); }
+
+  .money-metric { margin-bottom: 16px; }
+  .money-num { font-size: 28px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-1); line-height: 1; }
+  .money-num.bad { color: var(--accent-red); }
+  .money-num.good { color: var(--accent-green); }
+  .money-num-label { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+
+  .money-vs { text-align: center; }
+  .money-vs-word { font-size: 20px; font-weight: 500; color: var(--text-3); }
+
+  .big-stat {
+    text-align: center;
+    padding: 32px 0;
+    border-top: 0.5px solid var(--border);
+    border-bottom: 0.5px solid var(--border);
+    margin: 28px 0;
+  }
+
+  .big-stat-num {
+    font-size: 72px;
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    color: var(--text-1);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .big-stat-label { font-size: 14px; color: var(--text-2); }
+
+  .insight-box {
+    background: var(--bg-2);
+    border-left: 2px solid var(--border-md);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 16px 20px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.7;
+  }
+
+  .insight-box strong { color: var(--text-1); font-weight: 500; }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+    gap: 12px;
+  }
+
+  .footer-left { font-size: 12px; color: var(--text-3); }
+  .footer-left a { color: var(--text-2); text-decoration: none; }
+  .footer-left a:hover { color: var(--text-1); }
+  .footer-right { font-size: 11px; color: var(--text-3); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="header-eyebrow">Portfolio · Audience Intelligence &amp; Personalization</p>
+    <h1>The Influence Gap</h1>
+    <p class="header-thesis">
+      Platforms optimize for interaction. Markets require action.
+      <em>Engagement explains less than 2% of conversion variance across all platforms.</em>
+      This dashboard measures the gap between what platforms reward and what brands actually need.
+    </p>
+    <div class="meta-row">
+      <span class="meta-item"><strong>150,000</strong> campaigns</span>
+      <span class="meta-item"><strong>4</strong> platforms</span>
+      <span class="meta-item"><strong>7</strong> creator categories</span>
+      <span class="meta-item"><strong>5</strong> campaign types</span>
+      <span class="meta-item"><strong>IGS</strong> = z(Action) − z(Interaction)</span>
+    </div>
+  </header>
+
+  <nav>
+    <button class="active" onclick="showTab('overview', this)">Overview</button>
+    <button onclick="showTab('platform', this)">Platform gap</button>
+    <button onclick="showTab('archetypes', this)">Archetypes</button>
+    <button onclick="showTab('decoupling', this)">Decoupling</button>
+    <button onclick="showTab('money', this)">Money slide</button>
+  </nav>
+
+  <!-- TAB: OVERVIEW -->
+  <div id="tab-overview" class="tab show">
+    <div class="kpi-grid">
+      <div class="kpi"><p class="kpi-label">Campaigns</p><p class="kpi-value">150K</p><p class="kpi-sub">4 platforms</p></div>
+      <div class="kpi"><p class="kpi-label">Avg IGS</p><p class="kpi-value">0.00</p><p class="kpi-sub">z-score centered</p></div>
+      <div class="kpi"><p class="kpi-label">Lowest IGS</p><p class="kpi-value" style="color:var(--accent-red)">−5.07</p><p class="kpi-sub">Engagement Traps</p></div>
+      <div class="kpi"><p class="kpi-label">Highest IGS</p><p class="kpi-value" style="color:var(--accent-green)">+2.58</p><p class="kpi-sub">Quiet Converters</p></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <p class="chart-title">IGS distribution — all 150,000 campaigns</p>
+          <p class="chart-subtitle">Negative (red) = engagement outpaces action &nbsp;·&nbsp; Positive (blue) = action outpaces engagement</p>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="histChart" role="img" aria-label="Histogram of Influence Gap Scores. Most campaigns cluster near zero. A long negative tail represents Engagement Traps.">IGS distribution: most campaigns near zero, long negative tail for Engagement Traps.</canvas>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="chart-card">
+        <p class="chart-title">Mean IGS by campaign type</p>
+        <p class="chart-subtitle" style="margin-bottom:16px">Same creator, different brief — opposite gap behavior</p>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="campChart" role="img" aria-label="Bar chart of mean IGS by campaign type. Seasonal Sale highest at +0.18, Brand Awareness lowest at −0.18.">IGS by campaign type: Brand Awareness −0.18 to Seasonal Sale +0.18.</canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <p class="chart-title">Mean IGS by creator category</p>
+        <p class="chart-subtitle" style="margin-bottom:16px">Beauty and Fashion convert — Gaming and Tech consider</p>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="catChart" role="img" aria-label="Bar chart of mean IGS by creator category. Beauty highest at +0.18, Gaming lowest at −0.15.">IGS by category: Gaming −0.15 to Beauty +0.18.</canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: PLATFORM -->
+  <div id="tab-platform" class="tab">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <p class="chart-title">Mean Influence Gap Score by platform</p>
+          <p class="chart-subtitle">The gap is structural — a product of platform architecture, not creator quality</p>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="platChart" role="img" aria-label="Horizontal bar chart of mean IGS by platform. TikTok +0.33, YouTube +0.04, Instagram −0.07, Twitter −0.41.">Platform IGS: Twitter −0.41, Instagram −0.07, YouTube +0.04, TikTok +0.33.</canvas>
+      </div>
+    </div>
+    <div class="insight-box">
+      <strong>TikTok (+0.33):</strong> Algorithmic distribution by interest, not follower count. Content reaches high-intent audiences who didn't choose to follow — behavioral action follows.
+      <br><br>
+      <strong>Twitter (−0.44):</strong> Optimized for retweets, replies, and discourse. Platform rewards interaction loudly; purchase intent rarely follows the conversation.
+      <br><br>
+      <strong>YouTube (+0.04):</strong> Search-intent discovery drives longer consideration cycles — lower engagement, but higher-quality conversion when it happens.
+      <br><br>
+      <em style="color:var(--text-3)">Creators don't fail platforms. Platforms fail brands.</em>
+    </div>
+  </div>
+
+  <!-- TAB: ARCHETYPES -->
+  <div id="tab-archetypes" class="tab">
+    <div class="chart-card">
+      <p class="chart-title" style="margin-bottom:6px">Seven creator archetypes — ranked by mean IGS</p>
+      <p class="chart-subtitle" style="margin-bottom:20px">Bar width = share of dataset &nbsp;·&nbsp; IGS and CVR per segment</p>
+      <div class="arch-list" id="arch-list"></div>
+    </div>
+    <div class="insight-box">
+      <strong>68% of campaigns are Spike Artists</strong> — near-zero IGS, high variance. The default state of influencer marketing: neither reliably good nor reliably bad.
+      <br><br>
+      <strong>Quiet Converters are only 1.3% of campaigns</strong> but deliver the highest action yield in the dataset — systematically underpriced because their engagement metrics look unremarkable.
+      <br><br>
+      <strong>Engagement Traps (1.6%)</strong> carry a mean IGS of −5.07 — the most extreme gap in the dataset. Brands paying on engagement metrics are funding this segment disproportionately.
+    </div>
+  </div>
+
+  <!-- TAB: DECOUPLING -->
+  <div id="tab-decoupling" class="tab">
+    <div class="chart-card">
+      <p class="chart-title" style="margin-bottom:4px">Engagement rate vs. conversion rate</p>
+      <p class="chart-subtitle" style="margin-bottom:16px">If engagement predicted conversion, you'd see a diagonal line. You don't.</p>
+      <div class="legend" id="scatter-legend"></div>
+      <div class="chart-wrap" style="height:360px">
+        <canvas id="scatterChart" role="img" aria-label="Scatter plot of engagement rate versus conversion rate for campaigns across four platforms. No meaningful correlation is visible.">Scatter: near-zero correlation between engagement rate and conversion rate across all platforms.</canvas>
+      </div>
+    </div>
+    <div class="r-grid">
+      <div class="r-card">
+        <p class="r-card-platform">Twitter</p>
+        <p class="r-card-value">0.018</p>
+        <p class="r-card-note">0.03% variance explained</p>
+      </div>
+      <div class="r-card">
+        <p class="r-card-platform">Instagram</p>
+        <p class="r-card-value">0.103</p>
+        <p class="r-card-note">1.1% variance explained</p>
+      </div>
+      <div class="r-card">
+        <p class="r-card-platform">YouTube</p>
+        <p class="r-card-value">0.126</p>
+        <p class="r-card-note">1.6% variance explained</p>
+      </div>
+      <div class="r-card">
+        <p class="r-card-platform">TikTok</p>
+        <p class="r-card-value">0.139</p>
+        <p class="r-card-note">1.9% variance explained</p>
+      </div>
+    </div>
+    <div class="insight-box" style="margin-top:20px">
+      Pearson r values are statistically significant (p &lt; 0.001) across all platforms — but statistical significance and practical significance are not the same thing.
+      A correlation of r = 0.139 means engagement rate explains <strong>1.9% of conversion variance</strong> on TikTok, the strongest-performing platform.
+      <strong>Every creator brief built on engagement rate as a primary selection signal is optimizing for noise.</strong>
+    </div>
+  </div>
+
+  <!-- TAB: MONEY SLIDE -->
+  <div id="tab-money" class="tab">
+    <p class="section-note">Same budget. Radically different outcomes. This is not a performance variance — it is a selection failure.</p>
+
+    <div class="money-grid">
+      <div class="money-box">
+        <p class="money-box-label">Engagement Trap</p>
+        <div class="money-metric">
+          <p class="money-num">66,942</p>
+          <p class="money-num-label">avg engagements per campaign</p>
+        </div>
+        <div class="money-metric">
+          <p class="money-num bad">4</p>
+          <p class="money-num-label">avg conversions per campaign</p>
+        </div>
+        <div class="money-metric">
+          <p class="money-num">3.0%</p>
+          <p class="money-num-label">conversion rate</p>
+        </div>
+      </div>
+
+      <div class="money-vs">
+        <p class="money-vs-word">vs</p>
+      </div>
+
+      <div class="money-box highlight">
+        <p class="money-box-label">Quiet Converter</p>
+        <div class="money-metric">
+          <p class="money-num">20,072</p>
+          <p class="money-num-label">avg engagements per campaign</p>
+        </div>
+        <div class="money-metric">
+          <p class="money-num good">807</p>
+          <p class="money-num-label">avg conversions per campaign</p>
+        </div>
+        <div class="money-metric">
+          <p class="money-num">5.3%</p>
+          <p class="money-num-label">conversion rate</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="big-stat">
+      <p class="big-stat-num">6,203×</p>
+      <p class="big-stat-label">more action per engagement unit from Quiet Converters — with 3× less raw engagement</p>
+    </div>
+
+    <div class="chart-card">
+      <p class="chart-title" style="margin-bottom:16px">Average conversions per campaign</p>
+      <div class="chart-wrap" style="height:180px">
+        <canvas id="moneyChart" role="img" aria-label="Bar chart comparing average conversions per campaign. Engagement Trap: 4. Quiet Converter: 807.">Conversions: Engagement Trap 4, Quiet Converter 807.</canvas>
+      </div>
+    </div>
+
+    <div class="insight-box">
+      Brands optimizing for engagement metrics are <strong>systematically overpaying for the wrong signal</strong> — and leaving measurable ROI on the table with every brief they sign.
+      The Quiet Converter is the most underpriced creator segment in the market. Their engagement metrics look unremarkable. Their conversion metrics are not.
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-left">
+      Built by <a href="https://lylesmomportfolio.my.canva.site" target="_blank">Lyles Mom</a> &nbsp;·&nbsp;
+      Audience Intelligence &amp; Personalization Strategist &nbsp;·&nbsp;
+      <a href="https://lylesmomportfolio.my.canva.site" target="_blank">Portfolio</a>
+    </div>
+    <div class="footer-right">150,000 campaigns · IGS = z(Action) − z(Interaction)</div>
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('show'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('show');
+  btn.classList.add('active');
+}
+
+const TEXT2 = '#999';
+const TEXT3 = '#666';
+const GRID  = 'rgba(255,255,255,0.07)';
+const BASE_FONT = { family: "-apple-system,'Helvetica Neue',Arial,sans-serif", size: 11 };
+
+const ARCH_COLORS = {
+  'Quiet Converter':    '#1D9E75',
+  'Behavior-Positive':  '#5DCAA5',
+  'Full-Funnel Creator':'#378ADD',
+  'Spike Artist':       '#888780',
+  'Ghost Amplifier':    '#B4B2A9',
+  'Platform Native':    '#EF9F27',
+  'Engagement Trap':    '#E24B4A'
+};
+
+const PLAT_COLORS = {
+  TikTok:    '#E24B4A',
+  Instagram: '#EF9F27',
+  YouTube:   '#378ADD',
+  Twitter:   '#888780'
+};
+
+const defScales = {
+  x: { grid: { color: GRID }, ticks: { color: TEXT2, font: BASE_FONT } },
+  y: { grid: { color: GRID }, ticks: { color: TEXT2, font: BASE_FONT } }
+};
+
+const defPlugins = {
+  legend: { display: false },
+  tooltip: { titleFont: BASE_FONT, bodyFont: BASE_FONT, backgroundColor: '#1e1e1e', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 0.5, titleColor: '#f0f0f0', bodyColor: '#999' }
+};
+
+/* ── HISTOGRAM ── */
+const histBins = [
+  [-7.9,1],[-7.3,2],[-6.8,3],[-6.3,7],[-5.8,14],[-5.3,40],[-4.8,116],[-4.3,229],
+  [-3.8,287],[-3.3,287],[-2.8,240],[-2.3,220],[-1.8,295],[-1.3,3122],[-0.8,7367],
+  [-0.3,12174],[0.2,17212],[0.7,14835],[1.2,6543],[1.7,2011],[2.2,1498],[2.7,921],
+  [3.2,662],[3.7,459],[4.2,296],[4.7,203],[5.2,144],[5.7,97],[6.2,59],[6.7,39]
+];
+new Chart(document.getElementById('histChart'), {
+  type: 'bar',
+  data: {
+    labels: histBins.map(b => b[0].toFixed(1)),
+    datasets: [{
+      data: histBins.map(b => b[1]),
+      backgroundColor: histBins.map(b => b[0] < 0 ? 'rgba(226,75,74,0.55)' : 'rgba(55,138,221,0.55)'),
+      borderWidth: 0, borderRadius: 1, barPercentage: 0.95, categoryPercentage: 0.95
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { ...defPlugins, tooltip: { ...defPlugins.tooltip, callbacks: {
+      title: i => 'IGS ≈ ' + i[0].label,
+      label: i => i.raw.toLocaleString() + ' campaigns'
+    }}},
+    scales: { x: { ...defScales.x, ticks: { ...defScales.x.ticks, maxTicksLimit: 8 }}, y: defScales.y }
+  }
+});
+
+/* ── CAMPAIGN TYPE ── */
+const campData = [['Brand Awareness',-0.179],['Giveaway',-0.123],['Event Promotion',-0.007],['Product Launch',0.131],['Seasonal Sale',0.177]];
+new Chart(document.getElementById('campChart'), {
+  type: 'bar',
+  data: {
+    labels: campData.map(d => d[0]),
+    datasets: [{ data: campData.map(d => d[1]), backgroundColor: campData.map(d => d[1] >= 0 ? 'rgba(55,138,221,0.7)' : 'rgba(226,75,74,0.6)'), borderWidth: 0, borderRadius: 3 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { ...defPlugins, tooltip: { ...defPlugins.tooltip, callbacks: { label: i => 'IGS: ' + i.raw.toFixed(3) }}},
+    scales: {
+      x: { ...defScales.x, ticks: { color: TEXT2, font: { ...BASE_FONT, size: 10 }, maxRotation: 30 }},
+      y: { ...defScales.y, ticks: { color: TEXT2, font: BASE_FONT, callback: v => v.toFixed(2) }}
+    }
+  }
+});
+
+/* ── CATEGORY ── */
+const catData = [['Gaming',-0.147],['Tech',-0.133],['Travel',-0.084],['Fitness',0.028],['Food',0.061],['Fashion',0.095],['Beauty',0.18]];
+new Chart(document.getElementById('catChart'), {
+  type: 'bar',
+  data: {
+    labels: catData.map(d => d[0]),
+    datasets: [{ data: catData.map(d => d[1]), backgroundColor: catData.map(d => d[1] >= 0 ? 'rgba(29,158,117,0.7)' : 'rgba(226,75,74,0.6)'), borderWidth: 0, borderRadius: 3 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { ...defPlugins, tooltip: { ...defPlugins.tooltip, callbacks: { label: i => 'IGS: ' + i.raw.toFixed(3) }}},
+    scales: {
+      x: { ...defScales.x, ticks: { color: TEXT2, font: { ...BASE_FONT, size: 10 }, maxRotation: 30 }},
+      y: { ...defScales.y, ticks: { color: TEXT2, font: BASE_FONT, callback: v => v.toFixed(2) }}
+    }
+  }
+});
+
+/* ── PLATFORM ── */
+new Chart(document.getElementById('platChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Twitter','Instagram','YouTube','TikTok'],
+    datasets: [{ data: [-0.414,-0.071,0.058,0.349], backgroundColor: ['rgba(136,135,128,0.75)','rgba(239,159,39,0.75)','rgba(55,138,221,0.75)','rgba(226,75,74,0.75)'], borderWidth: 0, borderRadius: 4 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+    plugins: { ...defPlugins, tooltip: { ...defPlugins.tooltip, callbacks: { label: i => 'Mean IGS: ' + i.raw.toFixed(3) }}},
+    scales: {
+      x: { ...defScales.x, ticks: { color: TEXT2, font: BASE_FONT, callback: v => v.toFixed(2) }},
+      y: { ...defScales.y, ticks: { color: TEXT2, font: { ...BASE_FONT, size: 13 }}}
+    }
+  }
+});
+
+/* ── ARCHETYPES ── */
+const archData = [
+  { name:'Quiet Converter',     pct:1.3,  igs:2.58,  cvr:5.25 },
+  { name:'Behavior-Positive',   pct:5.2,  igs:1.05,  cvr:5.11 },
+  { name:'Full-Funnel Creator', pct:11.0, igs:0.37,  cvr:5.41 },
+  { name:'Spike Artist',        pct:68.3, igs:0.01,  cvr:3.12 },
+  { name:'Ghost Amplifier',     pct:10.6, igs:-0.33, cvr:1.81 },
+  { name:'Platform Native',     pct:2.0,  igs:-1.00, cvr:1.56 },
+  { name:'Engagement Trap',     pct:1.6,  igs:-5.07, cvr:3.02 }
+];
+const archList = document.getElementById('arch-list');
+archData.forEach(a => {
+  const igsColor = a.igs >= 0.5 ? '#1D9E75' : a.igs <= -0.5 ? '#E24B4A' : TEXT2;
+  const sign = a.igs >= 0 ? '+' : '';
+  archList.innerHTML += `
+    <div class="arch-row">
+      <span class="arch-name">${a.name}</span>
+      <div class="arch-bar-track"><div class="arch-bar" style="width:${Math.min(a.pct*1.35,100)}%;background:${ARCH_COLORS[a.name]};"></div></div>
+      <span class="arch-stat" style="color:${igsColor};font-weight:500;">${sign}${a.igs.toFixed(2)}</span>
+      <span class="arch-stat">${a.cvr.toFixed(1)}% CVR</span>
+      <span class="arch-pct">${a.pct}%</span>
+    </div>`;
+});
+
+/* ── SCATTER ── */
+const scatterLegendEl = document.getElementById('scatter-legend');
+Object.entries(PLAT_COLORS).forEach(([p, c]) => {
+  scatterLegendEl.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${c}"></span>${p}</span>`;
+});
+
+const scatterPoints = {
+  TikTok:    [[0.07,0.048],[0.33,0.062],[0.52,0.08],[0.18,0.091],[0.41,0.071],[0.85,0.085],[1.2,0.073],[0.22,0.095],[0.66,0.088],[0.97,0.083],[1.5,0.077],[0.74,0.101],[1.8,0.068],[0.55,0.112],[0.44,0.094],[0.91,0.078],[0.12,0.105],[1.35,0.069],[0.63,0.086],[0.28,0.099]],
+  Instagram: [[0.19,0.021],[0.45,0.03],[0.62,0.025],[0.95,0.019],[0.72,0.031],[1.1,0.017],[1.4,0.017],[0.15,0.044],[0.82,0.022],[0.31,0.033],[0.49,0.038],[0.88,0.029],[0.58,0.036],[0.24,0.041],[1.25,0.018],[0.77,0.027],[0.53,0.034],[1.05,0.02],[0.68,0.028],[0.38,0.039]],
+  YouTube:   [[0.11,0.074],[0.25,0.055],[0.09,0.042],[0.55,0.038],[0.44,0.049],[0.68,0.061],[0.35,0.049],[0.77,0.067],[0.92,0.052],[0.61,0.063],[1.1,0.041],[0.82,0.047],[1.3,0.044],[0.18,0.069],[0.47,0.051],[0.73,0.058],[0.31,0.064],[1.05,0.043],[0.59,0.056],[0.22,0.071]],
+  Twitter:   [[0.36,0.012],[0.78,0.014],[1.1,0.008],[1.4,0.009],[0.29,0.017],[0.55,0.011],[0.88,0.013],[1.7,0.006],[0.43,0.019],[1.9,0.007],[0.65,0.015],[1.2,0.009],[0.82,0.012],[0.48,0.018],[1.55,0.007],[0.71,0.013],[1.05,0.01],[0.33,0.02],[0.97,0.011],[1.65,0.007]]
+};
+
+new Chart(document.getElementById('scatterChart'), {
+  type: 'scatter',
+  data: {
+    datasets: Object.entries(scatterPoints).map(([p, pts]) => ({
+      label: p,
+      data: pts.map(([x,y]) => ({x,y})),
+      backgroundColor: PLAT_COLORS[p] + 'AA',
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointStyle: 'circle'
+    }))
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...defPlugins.tooltip, callbacks: { label: i => `${i.dataset.label}  ER: ${i.parsed.x.toFixed(2)}  CVR: ${(i.parsed.y*100).toFixed(1)}%` }}},
+    scales: {
+      x: { ...defScales.x, title: { display: true, text: 'Engagement rate', color: TEXT3, font: BASE_FONT }, min: 0, max: 2.1 },
+      y: { ...defScales.y, title: { display: true, text: 'Conversion rate', color: TEXT3, font: BASE_FONT }, min: 0, max: 0.13, ticks: { color: TEXT2, font: BASE_FONT, callback: v => (v*100).toFixed(0)+'%' }}
+    }
+  }
+});
+
+/* ── MONEY CHART ── */
+new Chart(document.getElementById('moneyChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Engagement Trap','Quiet Converter'],
+    datasets: [{ data: [3.7, 806.9], backgroundColor: ['rgba(226,75,74,0.7)','rgba(29,158,117,0.7)'], borderWidth: 0, borderRadius: 4 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { ...defPlugins, tooltip: { ...defPlugins.tooltip, callbacks: { label: i => 'Avg conversions: ' + i.raw.toFixed(1) }}},
+    scales: {
+      x: defScales.x,
+      y: { ...defScales.y, ticks: { color: TEXT2, font: BASE_FONT, callback: v => v.toFixed(0) }}
+    }
+  }
+});
+</script>
+</body>
+</html>
