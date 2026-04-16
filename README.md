@@ -3,7 +3,7 @@
 
 > *Platforms optimize for interaction. Markets require action. The gap between the two is where performance breaks.*
 
-**Live dashboard:** [influence-gap-dashboard](https://yourusername.github.io/the-influence-gap/influence_gap_dashboard.html)
+**Live dashboard:** [influence-gap-dashboard](https://llyles97-cmyk.github.io/the-influence-gap/influence_gap_dashboard.html)
 
 ---
 
